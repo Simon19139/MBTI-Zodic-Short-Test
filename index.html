@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBTI属相测试</title>
+    <!-- PWA核心配置 -->
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="#4CAF50">
+    <meta name="apple-mobile-web-app-title" content="MBTI属相测试">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <!-- 引入SheetJS库（用于生成xlsx文件） -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- 样式 -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 开始页面样式 */
+        .start-screen, .result-screen {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 50px;
+        }
+
+        /* 历史记录按钮样式 */
+        .history-btn {
+            background-color: #9C27B0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .history-btn:hover {
+            background-color: #7B1FA2;
+        }
+
+        /* 导出按钮样式 */
+        .export-btn {
+            background-color: #FF9800;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .export-btn:hover {
+            background-color: #F57C00;
+        }
+
+        .start-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: background-color 0.3s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .start-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* 测试页面样式 */
+        .test-screen {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .question-progress {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 20px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: left;
+            font-size: 16px;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .option-btn:hover {
+            background-color: #f0f8f0;
+            border-color: #4CAF50;
+        }
+
+        /* 结果页面样式 */
+        .result-screen {
+            display: none;
+        }
+
+        .animal-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .animal-name {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .mbti-type {
+            font-size: 20px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .trait-description {
+            text-align: left;
+            margin: 30px auto;
+            max-width: 600px;
+            line-height: 1.8;
+        }
+
+        .restart-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .restart-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4CAF50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 手机适配样式 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            .start-screen, .result-screen {
+                padding: 20px 10px;
+                margin-top: 20px;
+            }
+            .test-screen {
+                padding: 20px 15px;
+                margin-top: 20px;
+            }
+            .question-text {
+                font-size: 18px;
+            }
+            .animal-name {
+                font-size: 28px;
+            }
+            .start-btn {
+                padding: 12px 30px;
+                font-size: 16px;
+            }
+        }
+
+        /* 历史记录页面样式 */
+        .history-screen {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .history-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .history-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .history-icon {
+            font-size: 30px;
+        }
+
+        .history-info {
+            text-align: left;
+        }
+
+        .history-mbti {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .history-animal {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 40px 0;
+            color: #999;
+            font-size: 16px;
+        }
+
+        .history-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap; /* 适配手机端换行 */
+        }
+
+        .back-btn, .clear-history-btn, .export-history-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .back-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .back-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        .clear-history-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .clear-history-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        /* 导出按钮样式 */
+        .export-history-btn {
+            background-color: #FF9800;
+            color: white;
+        }
+
+        .export-history-btn:hover {
+            background-color: #F57C00;
+        }
+
+        /* 新增：导出格式选择弹窗样式 */
+        .export-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .export-modal-content {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .export-modal-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .export-format-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .format-option-btn {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .format-option-btn:hover {
+            background-color: #f0f8f0;
+            border-color: #4CAF50;
+        }
+
+        .cancel-export-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            background-color: #666;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .cancel-export-btn:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 开始页面 -->
+        <div class="start-screen">
+            <h1>🐾 MBTI属相测试 🐾</h1>
+            <p>回答以下12个问题，找到属于你的动物人格！</p>
+            <button class="start-btn" id="startBtn">开始测试</button>
+            <button class="history-btn" id="historyBtn">查看测试记录</button>
+            <button class="export-btn" id="homeExportBtn">导出测试记录</button>
+        </div>
+
+        <!-- 测试页面 -->
+        <div class="test-screen" id="testScreen">
+            <div class="question-progress" id="progress">问题 1/12</div>
+            <div class="question-text" id="questionText"></div>
+            <div class="options" id="optionsContainer"></div>
+        </div>
+
+        <!-- 加载页面 -->
+        <div class="loading" id="loadingScreen">
+            <div class="spinner"></div>
+            <p>正在分析你的性格...</p>
+        </div>
+
+        <!-- 结果页面 -->
+        <div class="result-screen" id="resultScreen">
+            <div class="animal-icon" id="animalIcon"></div>
+            <div class="animal-name" id="animalName"></div>
+            <div class="mbti-type" id="mbtiType"></div>
+            <div class="trait-description" id="traitDesc"></div>
+            <button class="restart-btn" id="restartBtn">重新测试</button>
+            <button class="history-btn" id="resultHistoryBtn" style="margin-left: 10px;">查看记录</button>
+            <button class="export-btn" id="resultExportBtn" style="margin-left: 10px;">导出记录</button>
+        </div>
+
+        <!-- 历史记录页面 -->
+        <div class="history-screen" id="historyScreen">
+            <div class="history-title">📜 我的测试记录</div>
+            <div class="history-list" id="historyList"></div>
+            <div class="history-actions">
+                <button class="back-btn" id="backBtn">返回首页</button>
+                <button class="clear-history-btn" id="clearHistoryBtn">清空记录</button>
+                <button class="export-history-btn" id="exportHistoryBtn">导出记录</button>
+            </div>
+        </div>
+
+        <!-- 新增：导出格式选择弹窗 -->
+        <div class="export-modal" id="exportModal">
+            <div class="export-modal-content">
+                <div class="export-modal-title">📤 选择导出格式</div>
+                <div class="export-format-options">
+                    <button class="format-option-btn" id="exportXlsxBtn">
+                        📊 Excel (.xlsx)
+                    </button>
+                    <button class="format-option-btn" id="exportCsvBtn">
+                        📄 CSV (.csv)
+                    </button>
+                </div>
+                <button class="cancel-export-btn" id="cancelExportBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. 测试题库（12道题，对应MBTI的4个维度：E/I, S/N, T/F, J/P）
+        const questions = [
+            {
+                text: "周末你更想怎么度过？",
+                options: [
+                    { text: "和朋友聚会、出门游玩", score: { E: 1, I: 0 } },
+                    { text: "宅家看书、看剧，独处放松", score: { E: 0, I: 1 } }
+                ]
+            },
+            {
+                text: "你做决定时更依赖？",
+                options: [
+                    { text: "直觉和灵感", score: { S: 0, N: 1 } },
+                    { text: "事实和经验", score: { S: 1, N: 0 } }
+                ]
+            },
+            {
+                text: "遇到矛盾时，你通常？",
+                options: [
+                    { text: "理性分析，就事论事", score: { T: 1, F: 0 } },
+                    { text: "考虑感受，注重和谐", score: { T: 0, F: 1 } }
+                ]
+            },
+            {
+                text: "对于旅行计划，你更倾向于？",
+                options: [
+                    { text: "提前做好详细规划", score: { J: 1, P: 0 } },
+                    { text: "随机应变，走一步看一步", score: { J: 0, P: 1 } }
+                ]
+            },
+            {
+                text: "学习新技能时，你喜欢？",
+                options: [
+                    { text: "快速掌握核心，不拘小节", score: { S: 0, N: 1 } },
+                    { text: "循序渐进，注重细节", score: { S: 1, N: 0 } }
+                ]
+            },
+            {
+                text: "在团队中，你更像？",
+                options: [
+                    { text: "主动发言，带动气氛", score: { E: 1, I: 0 } },
+                    { text: "默默倾听，思考后再表达", score: { E: 0, I: 1 } }
+                ]
+            },
+            {
+                text: "你更在意？",
+                options: [
+                    { text: "规则和公平", score: { T: 1, F: 0 } },
+                    { text: "人情和包容", score: { T: 0, F: 1 } }
+                ]
+            },
+            {
+                text: "面对截止日期，你通常？",
+                options: [
+                    { text: "提前完成，避免赶工", score: { J: 1, P: 0 } },
+                    { text: "最后冲刺，效率更高", score: { J: 0, P: 1 } }
+                ]
+            },
+            {
+                text: "你对未来的态度是？",
+                options: [
+                    { text: "畅想各种可能性", score: { S: 0, N: 1 } },
+                    { text: "关注当下，脚踏实地", score: { S: 1, N: 0 } }
+                ]
+            },
+            {
+                text: "社交后你感觉？",
+                options: [
+                    { text: "精力充沛，充满活力", score: { E: 1, I: 0 } },
+                    { text: "需要独处恢复精力", score: { E: 0, I: 1 } }
+                ]
+            },
+            {
+                text: "评价他人时，你更看重？",
+                options: [
+                    { text: "能力和结果", score: { T: 1, F: 0 } },
+                    { text: "动机和感受", score: { T: 0, F: 1 } }
+                ]
+            },
+            {
+                text: "生活方式上，你更偏爱？",
+                options: [
+                    { text: "有规律、有秩序", score: { J: 1, P: 0 } },
+                    { text: "自由、灵活", score: { J: 0, P: 1 } }
+                ]
+            }
+        ];
+
+        // 2. 动物MBTI对应表
+        const animalMbtiMap = [
+            {
+                mbti: "INTJ",
+                animal: "猫头鹰",
+                icon: "🦉",
+                description: "你是睿智的猫头鹰型人格（INTJ）。你独立、理性、富有远见，喜欢深度思考，不盲从大众。你有强烈的逻辑思维和规划能力，擅长解决复杂问题，是天生的战略家。虽然外表看起来高冷，但内心有自己坚定的原则和目标。"
+            },
+            {
+                mbti: "INFJ",
+                animal: "鹿",
+                icon: "🦌",
+                description: "你是温柔的鹿型人格（INFJ）。你富有同理心、洞察力强，善于理解他人的内心需求。你追求精神层面的满足，有强烈的理想主义，愿意为自己认可的价值观付出努力，是默默温暖他人的治愈者。"
+            },
+            {
+                mbti: "INTP",
+                animal: "狐狸",
+                icon: "🦊",
+                description: "你是机敏的狐狸型人格（INTP）。你好奇心旺盛，思维敏捷，喜欢探索各种新奇的想法和理论。你讨厌墨守成规，擅长从不同角度分析问题，虽然有时显得散漫，但总能用独特的方式找到解决方案。"
+            },
+            {
+                mbti: "INFP",
+                animal: "兔子",
+                icon: "🐇",
+                description: "你是柔软的兔子型人格（INFP）。你内心丰富、敏感细腻，有强烈的个人价值观。你热爱美好事物，富有创造力，虽然不善于应对冲突，但始终保持着纯粹和善良，是天生的理想主义者。"
+            },
+            {
+                mbti: "ENTJ",
+                animal: "狮子",
+                icon: "🦁",
+                description: "你是霸气的狮子型人格（ENTJ）。你自信、果断、有领导力，目标感极强，擅长统筹规划和指挥团队。你不畏惧挑战，敢于直面问题，是天生的领导者，总能带领大家朝着目标前进。"
+            },
+            {
+                mbti: "ENFJ",
+                animal: "海豚",
+                icon: "🐬",
+                description: "你是温暖的海豚型人格（ENFJ）。你热情、善于沟通，有强烈的责任感和感染力。你擅长理解和激励他人，乐于帮助身边的人成长，是团队中的粘合剂和精神领袖。"
+            },
+            {
+                mbti: "ENTP",
+                animal: "猴子",
+                icon: "🐒",
+                description: "你是活泼的猴子型人格（ENTP）。你思维跳脱、口才出众，喜欢辩论和挑战常规。你适应能力极强，总能在变化中找到乐趣，是团队中的气氛制造者和创意源泉。"
+            },
+            {
+                mbti: "ENFP",
+                animal: "松鼠",
+                icon: "🐿️",
+                description: "你是开朗的松鼠型人格（ENFP）。你热情、乐观、充满活力，对生活充满好奇。你善于发现生活中的美好，富有感染力，能快速和他人建立情感连接，是天生的社交小太阳。"
+            },
+            {
+                mbti: "ISFJ",
+                animal: "牧羊犬",
+                icon: "🐕",
+                description: "你是忠诚的牧羊犬型人格（ISFJ）。你踏实、细心、有责任感，善于照顾他人的需求。你注重细节，信守承诺，是身边人最可靠的后盾，总能默默付出并把事情打理得井井有条。"
+            },
+            {
+                mbti: "ISFP",
+                animal: "猫",
+                icon: "🐱",
+                description: "你是随性的猫型人格（ISFP）。你热爱自由、注重当下，有敏锐的审美和感知力。你不喜欢被束缚，做事随心而为，虽然外表看似慵懒，但有自己独特的生活节奏和态度。"
+            },
+            {
+                mbti: "ISTJ",
+                animal: "熊",
+                icon: "🐻",
+                description: "你是稳重的熊型人格（ISTJ）。你踏实、可靠、遵守规则，喜欢按部就班地做事。你有强烈的责任感，不轻易承诺，但一旦承诺就一定会做到，是让人安心的存在。"
+            },
+            {
+                mbti: "ISTP",
+                animal: "狼",
+                icon: "🐺",
+                description: "你是冷静的狼型人格（ISTP）。你务实、冷静、动手能力强，擅长解决实际问题。你不喜欢空谈，喜欢通过实践找到答案，适应能力强，能在危机中保持理性。"
+            },
+            {
+                mbti: "ESFJ",
+                animal: "蜜蜂",
+                icon: "🐝",
+                description: "你是勤劳的蜜蜂型人格（ESFJ）。你热情、友善、善于社交，注重人际关系的和谐。你乐于为集体付出，擅长组织和协调，是团队中不可或缺的实干家。"
+            },
+            {
+                mbti: "ESFP",
+                animal: "鹦鹉",
+                icon: "🦜",
+                description: "你是活泼的鹦鹉型人格（ESFP）。你外向、乐观、热爱生活，喜欢成为人群的焦点。你善于表达和表演，能快速适应新环境，是天生的享乐主义者。"
+            },
+            {
+                mbti: "ESTJ",
+                animal: "马",
+                icon: "🐴",
+                description: "你是果敢的马型人格（ESTJ）。你果断、务实、有执行力，喜欢明确的规则和目标。你擅长管理和组织，做事雷厉风行，是能带领团队高效完成任务的实干派。"
+            },
+            {
+                mbti: "ESTP",
+                animal: "豹子",
+                icon: "🐆",
+                description: "你是敏捷的豹子型人格（ESTP）。你勇敢、果断、喜欢冒险，擅长把握当下的机会。你适应能力极强，能在压力下快速做出决策，是天生的行动派。"
+            }
+        ];
+
+        // 3. 全局变量
+        let currentQuestionIndex = 0;
+        let scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+
+        // 4. DOM元素
+        const startBtn = document.getElementById('startBtn');
+        const testScreen = document.getElementById('testScreen');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const resultScreen = document.getElementById('resultScreen');
+        const progress = document.getElementById('progress');
+        const questionText = document.getElementById('questionText');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const animalIcon = document.getElementById('animalIcon');
+        const animalName = document.getElementById('animalName');
+        const mbtiType = document.getElementById('mbtiType');
+        const traitDesc = document.getElementById('traitDesc');
+        const restartBtn = document.getElementById('restartBtn');
+        
+        // 历史记录相关DOM元素
+        const historyBtn = document.getElementById('historyBtn');
+        const resultHistoryBtn = document.getElementById('resultHistoryBtn');
+        const historyScreen = document.getElementById('historyScreen');
+        const historyList = document.getElementById('historyList');
+        const backBtn = document.getElementById('backBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        
+        // 导出相关DOM元素
+        const homeExportBtn = document.getElementById('homeExportBtn');
+        const resultExportBtn = document.getElementById('resultExportBtn');
+        const exportHistoryBtn = document.getElementById('exportHistoryBtn');
+        const exportModal = document.getElementById('exportModal');
+        const exportXlsxBtn = document.getElementById('exportXlsxBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const cancelExportBtn = document.getElementById('cancelExportBtn');
+
+        // 5. 初始化测试
+        startBtn.addEventListener('click', startTest);
+        restartBtn.addEventListener('click', restartTest);
+        // 历史记录按钮事件
+        historyBtn.addEventListener('click', showHistory);
+        resultHistoryBtn.addEventListener('click', showHistory);
+        backBtn.addEventListener('click', backToHome);
+        clearHistoryBtn.addEventListener('click', clearHistory);
+        // 导出按钮事件（打开选择弹窗）
+        homeExportBtn.addEventListener('click', openExportModal);
+        resultExportBtn.addEventListener('click', openExportModal);
+        exportHistoryBtn.addEventListener('click', openExportModal);
+        // 导出格式选择事件
+        exportXlsxBtn.addEventListener('click', () => exportHistory('xlsx'));
+        exportCsvBtn.addEventListener('click', () => exportHistory('csv'));
+        cancelExportBtn.addEventListener('click', closeExportModal);
+
+        // 6. 开始测试
+        function startTest() {
+            document.querySelector('.start-screen').style.display = 'none';
+            testScreen.style.display = 'block';
+            currentQuestionIndex = 0;
+            scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+            showQuestion();
+        }
+
+        // 7. 显示当前问题
+        function showQuestion() {
+            const question = questions[currentQuestionIndex];
+            progress.textContent = `问题 ${currentQuestionIndex + 1}/${questions.length}`;
+            questionText.textContent = question.text;
+            
+            // 清空选项容器
+            optionsContainer.innerHTML = '';
+            
+            // 创建选项按钮
+            question.options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option.text;
+                btn.addEventListener('click', () => selectOption(option.score));
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        // 8. 选择选项并计分
+        function selectOption(score) {
+            // 累加分数
+            for (const key in score) {
+                scores[key] += score[key];
+            }
+
+            // 进入下一题或计算结果
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                // 显示加载动画
+                testScreen.style.display = 'none';
+                loadingScreen.style.display = 'block';
+                
+                // 模拟计算延迟，提升体验
+                setTimeout(calculateResult, 1500);
+            }
+        }
+
+        // 9. 计算MBTI结果并匹配动物
+        function calculateResult() {
+            // 计算每个维度的结果
+            const EorI = scores.E >= scores.I ? 'E' : 'I';
+            const SorN = scores.S >= scores.N ? 'S' : 'N';
+            const TorF = scores.T >= scores.F ? 'T' : 'F';
+            const JorP = scores.J >= scores.P ? 'J' : 'P';
+            const finalMbti = EorI + SorN + TorF + JorP;
+
+            // 匹配对应的动物
+            const matchedAnimal = animalMbtiMap.find(item => item.mbti === finalMbti);
+
+            // 显示结果
+            loadingScreen.style.display = 'none';
+            resultScreen.style.display = 'block';
+            animalIcon.textContent = matchedAnimal.icon;
+            animalName.textContent = matchedAnimal.animal;
+            mbtiType.textContent = `MBTI类型：${finalMbti}`;
+            traitDesc.textContent = matchedAnimal.description;
+
+            // 保存测试结果到本地存储
+            saveTestResult(finalMbti, matchedAnimal);
+        }
+
+        // 10. 重新测试
+        function restartTest() {
+            resultScreen.style.display = 'none';
+            startTest();
+        }
+
+        // 保存测试结果到localStorage
+        function saveTestResult(mbti, animalData) {
+            // 构造记录数据
+            const testResult = {
+                id: Date.now(), // 唯一标识（时间戳）
+                date: new Date().toLocaleString('zh-CN'), // 测试时间（本地化格式）
+                mbti: mbti,
+                animal: animalData.animal,
+                icon: animalData.icon,
+                description: animalData.description
+            };
+
+            // 从本地存储获取已有记录
+            let history = JSON.parse(localStorage.getItem('mbtiTestHistory')) || [];
+            // 添加新记录（最多保留10条）
+            history.unshift(testResult);
+            if (history.length > 10) {
+                history = history.slice(0, 10);
+            }
+            // 保存回本地存储
+            localStorage.setItem('mbtiTestHistory', JSON.stringify(history));
+        }
+
+        // 显示历史记录
+        function showHistory() {
+            // 隐藏其他页面，显示历史记录页面
+            document.querySelector('.start-screen').style.display = 'none';
+            testScreen.style.display = 'none';
+            resultScreen.style.display = 'none';
+            loadingScreen.style.display = 'none';
+            historyScreen.style.display = 'block';
+
+            // 加载并渲染历史记录
+            renderHistory();
+        }
+
+        // 渲染历史记录列表
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('mbtiTestHistory')) || [];
+            
+            if (history.length === 0) {
+                // 无记录时显示提示
+                historyList.innerHTML = '<div class="empty-history">暂无测试记录，快去完成一次测试吧！🐾</div>';
+                return;
+            }
+
+            // 渲染记录列表
+            historyList.innerHTML = '';
+            history.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <div class="history-date">测试时间：${item.date}</div>
+                    <div class="history-content">
+                        <div class="history-icon">${item.icon}</div>
+                        <div class="history-info">
+                            <div class="history-mbti">${item.mbti}</div>
+                            <div class="history-animal">${item.animal}</div>
+                        </div>
+                    </div>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        // 返回首页
+        function backToHome() {
+            historyScreen.style.display = 'none';
+            document.querySelector('.start-screen').style.display = 'block';
+        }
+
+        // 清空历史记录
+        function clearHistory() {
+            if (confirm('确定要清空所有测试记录吗？此操作不可恢复！')) {
+                localStorage.removeItem('mbtiTestHistory');
+                renderHistory(); // 重新渲染空列表
+            }
+        }
+
+        // 新增：打开导出格式选择弹窗
+        function openExportModal() {
+            exportModal.style.display = 'flex';
+        }
+
+        // 新增：关闭导出格式选择弹窗
+        function closeExportModal() {
+            exportModal.style.display = 'none';
+        }
+
+        // 核心：导出历史记录（支持xlsx/csv双格式）
+        function exportHistory(format) {
+            // 关闭弹窗
+            closeExportModal();
+            
+            // 获取历史记录
+            const history = JSON.parse(localStorage.getItem('mbtiTestHistory')) || [];
+            
+            // 无记录时提示
+            if (history.length === 0) {
+                alert('暂无测试记录可导出！');
+                return;
+            }
+
+            // 生成文件名（带时间戳）
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            // 1. Excel (.xlsx) 导出
+            if (format === 'xlsx') {
+                // 构造工作表数据
+                const wsData = [
+                    ['测试时间', 'MBTI类型', '动物人格', '人格描述'], // 表头
+                    ...history.map(item => [
+                        item.date,
+                        item.mbti,
+                        item.animal,
+                        item.description.replace(/\n/g, ' ') // 移除换行符
+                    ])
+                ];
+
+                // 创建工作表和工作簿
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'MBTI测试记录');
+
+                // 调整列宽（优化显示）
+                const wscols = [
+                    { wch: 20 }, // 测试时间
+                    { wch: 10 }, // MBTI类型
+                    { wch: 10 }, // 动物人格
+                    { wch: 80 }  // 人格描述
+                ];
+                ws['!cols'] = wscols;
+
+                // 导出文件
+                const fileName = `MBTI测试记录_${timeStr}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                // 提示成功
+                alert(`✅ Excel文件导出成功！\n文件名为：${fileName}`);
+            } 
+            // 2. CSV (.csv) 导出
+            else if (format === 'csv') {
+                // 构造CSV内容
+                const header = '测试时间,MBTI类型,动物人格,人格描述\n';
+                let csvContent = header;
+                history.forEach(item => {
+                    // 转义特殊字符
+                    const description = item.description.replace(/"/g, '""').replace(/\n/g, ' ');
+                    const row = [
+                        `"${item.date}"`,
+                        `"${item.mbti}"`,
+                        `"${item.animal}"`,
+                        `"${description}"`
+                    ].join(',') + '\n';
+                    csvContent += row;
+                });
+
+                // 创建Blob（带BOM头解决中文乱码）
+                const bom = '\uFEFF';
+                const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                
+                // 下载配置
+                const fileName = `MBTI测试记录_${timeStr}.csv`;
+                link.setAttribute('href', url);
+                link.setAttribute('download', fileName);
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                
+                // 触发下载
+                link.click();
+                
+                // 清理资源
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                // 提示成功
+                alert(`✅ CSV文件导出成功！\n文件名为：${fileName}`);
+            }
+        }
+    </script>
+</body>
+</html>

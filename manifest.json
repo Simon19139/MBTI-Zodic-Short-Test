@@ -1,0 +1,21 @@
+{
+    "name": "MBTI属相测试",
+    "short_name": "MBTI测试",
+    "description": "有趣的动物版MBTI性格测试，找到属于你的动物人格！",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#f5f7fa",
+    "theme_color": "#4CAF50",
+    "icons": [
+        {
+            "src": "icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
