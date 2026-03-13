@@ -1,7 +1,7 @@
 {
     "name": "MBTI属相测试",
     "short_name": "MBTI测试",
-    "description": "有趣的动物版MBTI性格测试，找到属于你的动物人格！详情咨询wechat：16628419139",
+    "description": "有趣的动物版MBTI性格测试，找到属于你的动物人格！详情咨询wechat：16628419139（原创作者，版权所有者）",
     "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#f5f7fa",
@@ -20,4 +20,5 @@
     ]
 
 }
+
 
